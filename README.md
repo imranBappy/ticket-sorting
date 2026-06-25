@@ -98,7 +98,7 @@ The `/sort-ticket` endpoint sends the ticket text to the model with a fixed syst
 
 ## Deployment
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full replication runbook (local, Render, Railway, Fly.io, and generic platforms).
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full replication runbook (local, Vercel, Render, Railway, Fly.io, and generic platforms).
 
 Minimum production requirements for grading:
 
@@ -111,16 +111,15 @@ Minimum production requirements for grading:
 ```
 mock-task/
 ├── index.js          # Express app and route handlers
+├── api/index.js      # Vercel serverless entry (re-exports Express app)
+├── vercel.json       # Vercel routing and function config
 ├── package.json
 ├── .env.example      # Environment variable template
-├── DEPLOYMENT.md     # Deployment and replication runbook
-└── SUBMISSION.md     # Google Form submission checklist
+└── DEPLOYMENT.md     # Deployment and replication runbook
 ```
 
 ## Known issues
 
-- Port is hardcoded to `5001` in `index.js`; `PORT` from `.env` is not yet read by the listener.
-- `package.json` `dev` script references `nodemon main` instead of `index.js`.
 - No automated tests.
 - `/sort-ticket` does not validate request body or handle LLM/API errors explicitly.
 

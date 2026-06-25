@@ -85,7 +85,11 @@ ${message}
     });
 });
 
-const PORT = 5001;
-app.listen(5001, () => {
-  console.log(`App is listening on ${PORT}`);
-});
+module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 5001;
+  app.listen(PORT, () => {
+    console.log(`App is listening on ${PORT}`);
+  });
+}

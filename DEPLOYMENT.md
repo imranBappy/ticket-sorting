@@ -80,7 +80,7 @@ Expected: JSON with `case_type`, `severity`, `department`, `agent_summary`, `hum
 
 ## 2. Production deployment
 
-The app is a long-running Node.js HTTP server. Use a platform that supports persistent processes (Render, Railway, Fly.io, EC2, Poridhi Lab). Serverless-only hosts (e.g. Vercel without an adapter) are not a direct fit.
+The app runs as a standard Node.js HTTP server locally. For **Vercel**, it is deployed as a serverless function via `api/index.js` and `vercel.json`. Other platforms (Render, Railway, Fly.io, EC2, Poridhi Lab) run `node index.js` as a persistent process.
 
 ### Common requirements (all platforms)
 
@@ -90,13 +90,42 @@ The app is a long-running Node.js HTTP server. Use a platform that supports pers
 | Node version | 18 or 20 |
 | Required env var | `OPENROUTER_API_KEY` |
 | Health check path | `/health` |
-| Listen port | Platform-assigned `PORT` env var **or** `5001` (see Known issues) |
-
-> **Note:** The current `index.js` binds to port `5001` explicitly. Some platforms inject `PORT` dynamically. If health checks fail after deploy, update the listener to use `process.env.PORT || 5001`.
+| Listen port | Platform-assigned `PORT` env var or `5001` (local / Render / Railway / Fly) |
 
 ---
 
-### 2.1 Render
+### 2.1 Vercel
+
+1. Push this repo to GitHub (public).
+2. Install the [Vercel CLI](https://vercel.com/docs/cli) (optional) or use the [Vercel dashboard](https://vercel.com/new).
+3. **Import** the GitHub repo as a new project.
+4. **Environment variables** → add:
+   - `OPENROUTER_API_KEY` = your key
+5. Deploy with default settings (no custom build command needed).
+6. Copy the production URL (e.g. `https://mock-task.vercel.app`).
+7. Verify:
+
+```bash
+curl https://<your-project>.vercel.app/health
+curl -s -X POST https://<your-project>.vercel.app/sort-ticket \
+  -H "Content-Type: application/json" \
+  -d '{"ticket_id":"test-1","message":"Payment failed on my last invoice."}'
+```
+
+**CLI deploy (from project root):**
+
+```bash
+pnpm install
+vercel link          # first time only
+vercel env add OPENROUTER_API_KEY
+vercel --prod
+```
+
+**How it works:** `vercel.json` rewrites all routes to `api/index.js`, which exports the Express app. Locally, run `node index.js` as usual.
+
+---
+
+### 2.2 Render
 
 1. Push this repo to GitHub (public).
 2. In [Render](https://render.com): **New → Web Service** → connect the repo.
@@ -116,7 +145,7 @@ curl https://<your-service>.onrender.com/health
 
 ---
 
-### 2.2 Railway
+### 2.3 Railway
 
 1. [Railway](https://railway.app) → **New Project** → **Deploy from GitHub repo**.
 2. Set start command: `node index.js`
@@ -130,7 +159,7 @@ curl https://<your-app>.up.railway.app/health
 
 ---
 
-### 2.3 Fly.io
+### 2.4 Fly.io
 
 1. Install [flyctl](https://fly.io/docs/hands-on/install-flyctl/).
 2. From the project root:
@@ -167,7 +196,7 @@ curl https://<your-app>.fly.dev/health
 
 ---
 
-### 2.4 AWS EC2 (minimal)
+### 2.5 AWS EC2 (minimal)
 
 1. Launch an Ubuntu EC2 instance; open inbound TCP on your app port (or `80`/`443` behind a reverse proxy).
 2. SSH in and install Node 20:
@@ -221,7 +250,8 @@ Use this before submitting the Google Form:
 | `/health` connection refused | Server not running or wrong port | Confirm start command; check platform logs |
 | `/health` timeout on Render free tier | Service spun down | Wait for cold start (~30s) and retry |
 | `/sort-ticket` 500 or hang | Missing/invalid API key | Verify `OPENROUTER_API_KEY` in env |
-| Platform health check fails | App listens on wrong port | Use `process.env.PORT \|\| 5001` in `index.js` |
+| Platform health check fails | App listens on wrong port | Confirm `process.env.PORT \|\| 5001` in `index.js` (non-Vercel hosts) |
+| Vercel `/sort-ticket` times out | LLM call exceeds function limit | Hobby plan: 10s max; Pro allows up to 60s (`maxDuration` in `vercel.json`) |
 | Invalid JSON from LLM | Model returned non-JSON | Retry; check OpenRouter status/dashboard |
 
 ---
