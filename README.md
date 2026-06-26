@@ -4,6 +4,63 @@ Evidence-based fintech investigation engine for the QueueStorm hackathon. This s
 
 This is **not** a chatbot or ticket classifier — it is an investigation pipeline that matches evidence, applies rules, and returns structured JSON verdicts.
 
+## Submission deliverables
+
+| Deliverable | Location |
+|-------------|----------|
+| GitHub repository | https://github.com/imranBappy/ticket-sorting (public; collaborator access for organizer `bipulhf`) |
+| Runbook (local replication) | **[RUNBOOK.md](./RUNBOOK.md)** — copy-paste setup, start, and verify commands |
+| Dependency file | `package.json` + `pnpm-lock.yaml` |
+| Sample output | **[sample_output.json](./sample_output.json)** — real API response for `SAMPLE-01` from `SUST_Preli_Sample_Cases.json` |
+| Deployment guide | **[DEPLOYMENT.md](./DEPLOYMENT.md)** — Vercel / Render / Railway |
+
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Runtime | Node.js 18+ / 20+ |
+| HTTP framework | Express 5 |
+| Validation | Zod |
+| Logging | Pino + pino-http |
+| Testing | Jest + Supertest |
+| LLM gateway | OpenRouter (OpenAI-compatible API) |
+| Deployment | Vercel serverless (`api/index.js`) or any Node host |
+| Package manager | pnpm |
+
+## AI approach
+
+The system is **deterministic-first**. Every request flows through a fixed investigation pipeline before any model is considered:
+
+1. **Complaint parser** — regex/heuristics extract amount, type, phone numbers, time references, intent, and language (no AI).
+2. **Transaction matcher** — weighted scoring ranks transactions against parsed signals (amount ±1%, type, counterparty, timestamp ±2h).
+3. **Evidence engine** — compares complaint intent against matched transaction status to produce `consistent`, `inconsistent`, or `insufficient_data`.
+4. **Rule engine** — maps case type + evidence to department, severity, and `human_review_required`.
+5. **Reply generator** — template-based `agent_summary`, `recommended_next_action`, and `customer_reply` for clear English cases.
+6. **LLM (optional, max 1 call)** — invoked only when language is Bangla/Banglish/mixed, intent is ambiguous, or parser confidence is low. The model receives structured investigation state and returns JSON text fields only; it does not decide routing or evidence verdicts.
+7. **Output safety scrub** — strips PIN/OTP/password/refund promises from all generated text before response validation.
+
+This design keeps latency and cost low for the majority of English tickets while still handling multilingual and edge cases safely.
+
+## MODELS
+
+| Model | Provider | Where it runs | When invoked | Why chosen |
+|-------|----------|---------------|--------------|------------|
+| `openai/gpt-4o-mini` | OpenRouter (`https://openrouter.ai/api/v1`) | External API call from the Node.js service (local, Vercel, or any host) | At most **once per request**, only for Bangla/Banglish/mixed language, ambiguous intent, or parser confidence &lt; 0.6 | Fast, inexpensive, strong at structured JSON output and Bengali/Banglish text generation; temperature `0` for reproducibility |
+
+**Cost reasoning:** Most sample and production-like English complaints complete on the deterministic path (`llmUsed: false`) at **$0 LLM cost**. When the LLM is called, `gpt-4o-mini` via OpenRouter costs roughly **$0.15 / 1M input tokens** and **$0.60 / 1M output tokens** — a single investigation prompt is typically &lt; 2k tokens, so cost per LLM-assisted ticket is well under **$0.001**. A hard **10s timeout** and safe template fallback prevent runaway spend on slow or failed calls.
+
+Configurable via `LLM_MODEL` and `OPENROUTER_API_KEY` environment variables. See `.env.example`.
+
+## Assumptions
+
+- Complaints are plain text in English, Bangla, Banglish, or mixed; no attachments or images.
+- Transaction history is provided inline in the request body (no external ledger lookup).
+- Amounts are in BDT unless otherwise stated; phone numbers follow Bangladesh formats.
+- The service is stateless — no ticket persistence, audit log, or case reopening across requests.
+- `OPENROUTER_API_KEY` is available in production for multilingual/ambiguous paths; without it, deterministic English cases still work and LLM paths return safe fallbacks.
+- Judges and integrators call `POST /analyze-ticket` with JSON matching the published schema (`ticket_id`, `complaint`, optional `transaction_history`).
+- Human agents always review high-severity and dispute cases (`human_review_required: true` for wrong transfers, fraud, and inconsistent evidence).
+
 ## Live endpoints
 
 | Method | Path | Description |
@@ -201,23 +258,26 @@ Best match returned if score ≥ 50; otherwise `relevant_transaction_id` is `nul
 | No matching transaction | `insufficient_data` |
 | Ambiguous intent | `insufficient_data` |
 
-## Safety guardrails
+## Safety logic
 
-**Input safety:** Blocks prompt injection, jailbreak attempts, SQL injection patterns. Returns `403`.
+**Input safety** (`src/middleware/input-safety.js`): Blocks prompt injection, jailbreak attempts, and SQL-injection-like patterns in complaint text. Returns `403` with `reason_codes` — adversarial instructions embedded in complaints cannot override system rules.
 
-**Output safety:** Scrubs PIN, OTP, password, API key, refund confirmations, and stack traces from generated text. Forces `human_review_required` when triggered.
+**Output safety** (`src/utils/output-safety.js`): Scrubs PIN, OTP, password, API key, refund confirmations, and stack traces from `agent_summary`, `recommended_next_action`, and `customer_reply`. Forces `human_review_required: true` when sensitive patterns are detected.
 
-## Model choice
+**Policy guardrails in replies:** Customer-facing text never promises refunds/reversals, never requests credentials, and never directs users to third-party channels. Template and LLM outputs are validated against these rules before the response is returned.
 
-| Setting | Value |
-|---------|-------|
-| Provider | [OpenRouter](https://openrouter.ai/) |
-| Model | `openai/gpt-4o-mini` |
-| Temperature | `0` |
-| Max calls per request | `1` |
-| Timeout | `10s` |
+## Sample output
 
-LLM is invoked only for Bangla/Banglish/mixed language, ambiguous cases, or when template replies are insufficient.
+A real response generated by this service is committed at **[sample_output.json](./sample_output.json)**.
+
+It was produced by posting the `SAMPLE-01` input from `SUST_Preli_Sample_Cases.json` to `POST /analyze-ticket`. Key fields match the reference case: `relevant_transaction_id: TXN-9101`, `evidence_verdict: consistent`, `case_type: wrong_transfer`, `department: dispute_resolution`.
+
+Regenerate locally:
+
+```bash
+pnpm start   # terminal 1
+node scripts/generate-sample-output.js   # terminal 2
+```
 
 ## Environment variables
 

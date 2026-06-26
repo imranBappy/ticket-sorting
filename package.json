@@ -12,7 +12,8 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "eslint src tests",
-    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\""
+    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\"",
+    "sample-output": "node scripts/generate-sample-output.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
