@@ -1,1 +1,3 @@
-module.exports = require("../index");
+const createApp = require("../src/app");
+
+module.exports = createApp();
