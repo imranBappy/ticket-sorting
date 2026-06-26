@@ -6,8 +6,9 @@ async function analyzeTicket(req, res, next) {
   const start = Date.now();
 
   try {
-    const { complaint, transaction_history } = req.validatedBody;
+    const { ticket_id, complaint, transaction_history } = req.validatedBody;
     const { response, meta } = await investigationService.investigate({
+      ticket_id,
       complaint,
       transaction_history,
     });

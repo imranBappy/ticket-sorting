@@ -17,7 +17,7 @@ function applyRules(parsedComplaint, evidenceResult, matchResult) {
     ]),
   ];
 
-  if (caseType === "wrong_transfer") {
+  if (caseType === "wrong_transfer" && matchResult.relevantTransactionId) {
     humanReviewRequired = true;
     reasonCodes.push("wrong_transfer_policy");
   }
@@ -27,7 +27,23 @@ function applyRules(parsedComplaint, evidenceResult, matchResult) {
     reasonCodes.push("fraud_escalation");
   }
 
-  if (evidenceResult.evidenceVerdict === "insufficient_data") {
+  if (caseType === "duplicate_payment") {
+    humanReviewRequired = true;
+    reasonCodes.push("duplicate_payment_review");
+  }
+
+  if (caseType === "agent_cash_in_issue") {
+    humanReviewRequired = true;
+    reasonCodes.push("agent_cash_in_review");
+  }
+
+  if (matchResult.ambiguous) {
+    reasonCodes.push("ambiguous_match");
+  } else if (
+    evidenceResult.evidenceVerdict === "insufficient_data" &&
+    caseType !== "other" &&
+    caseType !== "wrong_transfer"
+  ) {
     humanReviewRequired = true;
     reasonCodes.push("insufficient_evidence");
   }
@@ -37,7 +53,7 @@ function applyRules(parsedComplaint, evidenceResult, matchResult) {
     reasonCodes.push("evidence_inconsistent");
   }
 
-  if (classification.ambiguous) {
+  if (classification.ambiguous && caseType !== "other") {
     humanReviewRequired = true;
     reasonCodes.push("ambiguous_complaint");
   }

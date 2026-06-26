@@ -20,76 +20,18 @@ Client  --HTTPS-->  Express API (Node.js)
 
 ## 1. Local replication
 
-### 1.1 Clone and install
+Use **[RUNBOOK.md](./RUNBOOK.md)** — full step-by-step commands (prerequisites, clone, install, env, start, verify, troubleshoot). No steps omitted.
+
+Quick summary:
 
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
-cd mock-task
+git clone https://github.com/imranBappy/ticket-sorting.git
+cd ticket-sorting
 pnpm install
-```
-
-### 1.2 Configure environment
-
-```bash
 cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-OPENROUTER_API_KEY=sk-or-v1-...
-PORT=5001
-LLM_TIMEOUT_MS=10000
-```
-
-### 1.3 Start the server
-
-```bash
+# optional: set OPENROUTER_API_KEY in .env
 pnpm start
-```
-
-Expected output:
-
-```
-QueueStorm Investigator API listening
-```
-
-### 1.4 Smoke tests
-
-**Health check:**
-
-```bash
 curl -i http://localhost:5001/health
-```
-
-Expected: `HTTP/1.1 200 OK` with body `OK`
-
-**Investigation:**
-
-```bash
-curl -s -X POST http://localhost:5001/analyze-ticket \
-  -H "Content-Type: application/json" \
-  -d '{
-    "complaint": "I sent 5000 taka to wrong number 01712345678",
-    "transaction_history": [{
-      "id": "txn_abc123",
-      "amount": 5000,
-      "currency": "BDT",
-      "type": "transfer",
-      "counterparty": "01712345678",
-      "merchant": null,
-      "timestamp": "2026-06-26T14:05:00Z",
-      "status": "completed"
-    }]
-  }' | jq .
-```
-
-Expected: JSON with `evidence_verdict`, `case_type`, `department`, `human_review_required`, `confidence`, `reason_codes`.
-
-**Run tests:**
-
-```bash
-pnpm test
 ```
 
 ---
@@ -141,9 +83,9 @@ Use start command `node index.js`, set `OPENROUTER_API_KEY`, health check `/heal
 ## 3. Post-deploy checklist
 
 - [ ] Repository is public on GitHub
-- [ ] `README.md` and this runbook are in the repo
+- [ ] `README.md` and [RUNBOOK.md](./RUNBOOK.md) are in the repo
 - [ ] Live base URL uses HTTPS
-- [ ] `GET <base-url>/health` returns `200` and body `OK`
+- [ ] `GET <base-url>/health` returns `200` and body `{"status":"ok"}`
 - [ ] `POST <base-url>/analyze-ticket` returns valid JSON
 - [ ] `OPENROUTER_API_KEY` is set only in platform secrets
 - [ ] `pnpm test` passes locally

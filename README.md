@@ -13,37 +13,21 @@ This is **not** a chatbot or ticket classifier — it is an investigation pipeli
 
 ## Quick start (local)
 
-### Prerequisites
-
-- Node.js 18+
-- [pnpm](https://pnpm.io/) (or npm)
-- OpenRouter API key ([create one](https://openrouter.ai/keys))
-
-### Setup
+**Full copy-paste runbook:** **[RUNBOOK.md](./RUNBOOK.md)** — step-by-step commands to clone, install, configure, start, and verify the service. Use this if Docker or one-click deploy is unavailable.
 
 ```bash
-git clone <YOUR_REPO_URL>
-cd mock-task
-
+git clone https://github.com/imranBappy/ticket-sorting.git
+cd ticket-sorting
 pnpm install
 cp .env.example .env
-# Edit .env and set OPENROUTER_API_KEY
-```
-
-### Run
-
-```bash
 pnpm start
-# or: pnpm dev
 ```
 
-Server listens on port `5001` by default.
-
-### Verify health
+In a second terminal:
 
 ```bash
-curl http://localhost:5001/health
-# Expected: OK
+curl -i http://localhost:5001/health
+# Expected: HTTP 200 and {"status":"ok"}
 ```
 
 ### Example request
@@ -52,6 +36,7 @@ curl http://localhost:5001/health
 curl -X POST http://localhost:5001/analyze-ticket \
   -H "Content-Type: application/json" \
   -d '{
+    "ticket_id": "TKT-100",
     "complaint": "I sent 5000 taka to wrong number 01712345678 around 2pm",
     "transaction_history": [
       {
@@ -72,6 +57,7 @@ curl -X POST http://localhost:5001/analyze-ticket \
 
 ```json
 {
+  "ticket_id": "TKT-100",
   "relevant_transaction_id": "txn_abc123",
   "evidence_verdict": "consistent",
   "case_type": "wrong_transfer",
@@ -79,10 +65,21 @@ curl -X POST http://localhost:5001/analyze-ticket \
   "department": "dispute_resolution",
   "agent_summary": "Case classified as wrong_transfer. Evidence verdict: consistent. Matched transaction txn_abc123.",
   "recommended_next_action": "Verify beneficiary details and initiate dispute review per wrong-transfer policy. Do not promise reversal.",
-  "customer_reply": "We have received your report regarding a possible wrong transfer...",
+  "customer_reply": "We have received your report regarding a possible wrong transfer. Our dispute resolution team is reviewing the transaction details. Please contact official support if you have additional information. We cannot confirm any reversal at this stage.",
   "human_review_required": true,
-  "confidence": 0.85,
-  "reason_codes": ["amount_match", "type_match", "counterparty_match", "deterministic_path"]
+  "confidence": 0.95,
+  "reason_codes": [
+    "intent_classified",
+    "status_match",
+    "completed_transfer_found",
+    "amount_match",
+    "type_match",
+    "counterparty_match",
+    "time_reference",
+    "status_considered",
+    "wrong_transfer_policy",
+    "deterministic_path"
+  ]
 }
 ```
 
@@ -147,6 +144,7 @@ api/index.js                # Vercel serverless entry
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `ticket_id` | string | Yes | Ticket or case identifier |
 | `complaint` | string | Yes | Customer complaint text |
 | `transaction_history` | array | No | List of transactions (default `[]`) |
 
@@ -163,7 +161,7 @@ api/index.js                # Vercel serverless entry
 | `timestamp` | string | ISO or parseable datetime |
 | `status` | enum | `completed`, `failed`, `pending`, `reversed`, `cancelled` |
 
-**Response fields:** `relevant_transaction_id`, `evidence_verdict`, `case_type`, `severity`, `department`, `agent_summary`, `recommended_next_action`, `customer_reply`, `human_review_required`, `confidence`, `reason_codes`
+**Response fields:** `ticket_id`, `relevant_transaction_id`, `evidence_verdict`, `case_type`, `severity`, `department`, `agent_summary`, `recommended_next_action`, `customer_reply`, `human_review_required`, `confidence`, `reason_codes`
 
 **Error responses** are always JSON with `error` and `reason_codes`.
 
@@ -235,7 +233,8 @@ LLM is invoked only for Bangla/Banglish/mixed language, ambiguous cases, or when
 
 ## Deployment
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for Vercel, Render, Railway, and local replication.
+- **Local setup:** **[RUNBOOK.md](./RUNBOOK.md)** (copy-paste commands)
+- **Production:** **[DEPLOYMENT.md](./DEPLOYMENT.md)** (Vercel, Render, Railway)
 
 **Vercel:** `api/index.js` exports the Express app. `vercel.json` rewrites all routes with `maxDuration: 30`.
 

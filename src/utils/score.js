@@ -1,7 +1,7 @@
 function normalizePhone(phone) {
   if (!phone) return "";
   const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("880")) return digits.slice(2);
+  if (digits.startsWith("880")) return digits.slice(3);
   if (digits.startsWith("0")) return digits.slice(1);
   return digits;
 }

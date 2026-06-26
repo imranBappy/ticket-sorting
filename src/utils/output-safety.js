@@ -1,15 +1,48 @@
 const UNSAFE_OUTPUT_PATTERNS = [
-  { pattern: /\bPIN\b/i, replacement: "[redacted]" },
-  { pattern: /\bOTP\b/i, replacement: "[redacted]" },
-  { pattern: /\bpassword\b/i, replacement: "[redacted]" },
-  { pattern: /\bapi\s*key\b/i, replacement: "[redacted]" },
-  { pattern: /\btoken\b/i, replacement: "[redacted]" },
-  { pattern: /\bsecret\b/i, replacement: "[redacted]" },
-  { pattern: /\bI\s+have\s+refunded\b/i, replacement: "We are reviewing your refund request" },
-  { pattern: /\bwe\s+already\s+reversed\b/i, replacement: "We are reviewing the transaction status" },
-  { pattern: /\bwe\s+unblocked\s+your\s+account\b/i, replacement: "We are reviewing your account status" },
-  { pattern: /at\s+\S+\s+line\s+\d+/i, replacement: "[error details removed]" },
-  { pattern: /Error:\s*.+/i, replacement: "[error details removed]" },
+  { pattern: /\bPIN\b/gi, replacement: "[redacted]" },
+  { pattern: /\bOTP\b/gi, replacement: "[redacted]" },
+  { pattern: /\bpassword\b/gi, replacement: "[redacted]" },
+  { pattern: /\bpasscode\b/gi, replacement: "[redacted]" },
+  { pattern: /\bcredentials?\b/gi, replacement: "[redacted]" },
+  { pattern: /\bcvv\b/gi, replacement: "[redacted]" },
+  { pattern: /\bcard\s*number\b/gi, replacement: "[redacted]" },
+  { pattern: /\bapi\s*key\b/gi, replacement: "[redacted]" },
+  { pattern: /\btoken\b/gi, replacement: "[redacted]" },
+  { pattern: /\bsecret\b/gi, replacement: "[redacted]" },
+  {
+    pattern: /\b(i|we)\s+(have|will|already)?\s*refund(ed)?\b/gi,
+    replacement: "We are reviewing your refund request",
+  },
+  {
+    pattern: /\brefund\s+(is|has\s+been|will\s+be|was)\s*(processed|approved|issued|done)\b/gi,
+    replacement: "We are reviewing your refund request",
+  },
+  {
+    pattern: /\b(i|we)\s+(have|will|already)?\s*reverse(d)?\b/gi,
+    replacement: "We are reviewing the transaction status",
+  },
+  {
+    pattern: /\breversal\s+(has\s+been|will\s+be|is|was)\s*(initiated|processed|done)\b/gi,
+    replacement: "We are reviewing the transaction status",
+  },
+  {
+    pattern: /\b(i|we)\s+(have|will|already)?\s*unblock(ed)?\b/gi,
+    replacement: "We are reviewing your account status",
+  },
+  {
+    pattern: /\baccount\s+(has\s+been|is|will\s+be|was)\s+unblocked\b/gi,
+    replacement: "We are reviewing your account status",
+  },
+  {
+    pattern: /\b(i|we)\s+(have|will|already)?\s*recover(ed)?\b/gi,
+    replacement: "We are investigating the transaction activity",
+  },
+  {
+    pattern: /\b(money|funds|balance)\s+(has\s+been|is|will\s+be|was)\s+recovered\b/gi,
+    replacement: "We are investigating the transaction activity",
+  },
+  { pattern: /at\s+\S+\s+line\s+\d+/gi, replacement: "[error details removed]" },
+  { pattern: /Error:\s*.+/gi, replacement: "[error details removed]" },
 ];
 
 function scrubUnsafeOutput(text) {

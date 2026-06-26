@@ -16,7 +16,15 @@ function buildLlmFallbackResponse(partial = {}) {
       "Thank you for contacting us. Your case has been received and will be reviewed by our official support team. We will follow up after verification.",
     human_review_required: true,
     confidence: 0.3,
-    reason_codes: [...new Set([...(partial.reason_codes || []), "llm_timeout"])],
+    reason_codes: [
+      ...new Set([
+        ...(partial.reason_codes || []),
+        ...((partial.reason_codes || []).includes("llm_not_configured") ||
+        (partial.reason_codes || []).includes("llm_error")
+          ? []
+          : ["llm_timeout"]),
+      ]),
+    ],
   };
 }
 

@@ -16,6 +16,15 @@ function buildRecommendedAction(caseType, evidenceVerdict, humanReviewRequired) 
   if (caseType === "payment_failed" && evidenceVerdict === "inconsistent") {
     return "Compare gateway logs with customer report. Customer may have been debited despite failure message.";
   }
+  if (caseType === "duplicate_payment") {
+    return "Verify the duplicate with payments_ops. If the biller confirms only one payment was received, initiate reversal of duplicate transaction.";
+  }
+  if (caseType === "merchant_settlement_delay") {
+    return "Route to merchant_operations to verify settlement batch status. If the batch is delayed, communicate a revised ETA to the merchant.";
+  }
+  if (caseType === "agent_cash_in_issue") {
+    return "Investigate cash-in status with agent operations. Confirm settlement state and resolve within the standard cash-in SLA.";
+  }
   if (evidenceVerdict === "insufficient_data") {
     return "Request additional transaction details from customer and verify against core banking records.";
   }
@@ -34,6 +43,15 @@ function buildCustomerReply(caseType, evidenceVerdict) {
   }
   if (caseType === "refund_request") {
     return "We have logged your refund request. Our team will verify the transaction and contact you through official support with next steps. We cannot confirm a refund until review is complete.";
+  }
+  if (caseType === "duplicate_payment") {
+    return "We have noted the possible duplicate payment. Our payments team will verify with the biller and any eligible amount will be returned through official channels. Please do not share your PIN or OTP with anyone.";
+  }
+  if (caseType === "merchant_settlement_delay") {
+    return "We have noted your concern about settlement. Our merchant operations team will check the batch status and update you on the expected settlement time through official channels.";
+  }
+  if (caseType === "agent_cash_in_issue") {
+    return "We have noted your concern regarding the cash-in transaction. Our agent operations team is investigating and will update you soon through official channels. Please do not share your PIN or OTP with anyone.";
   }
   if (caseType === "phishing_or_social_engineering") {
     return "We take security concerns seriously. Your report has been escalated to our fraud and risk team. Please do not share PIN, OTP, or passwords with anyone. Contact official support immediately if you suspect unauthorized access.";

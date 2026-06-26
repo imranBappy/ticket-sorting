@@ -1,9 +1,22 @@
 const { detectLanguage } = require("../../utils/language-detect");
 
+const BANGLA_TO_ASCII = {
+  "০": "0",
+  "১": "1",
+  "২": "2",
+  "৩": "3",
+  "৪": "4",
+  "৫": "5",
+  "৬": "6",
+  "৭": "7",
+  "৮": "8",
+  "৯": "9",
+};
+
 const AMOUNT_PATTERNS = [
-  /(?:৳|tk\.?|taka)\s*([\d,]+(?:\.\d+)?)/i,
-  /([\d,]+(?:\.\d+)?)\s*(?:taka|tk\.?|bdt)/i,
-  /\b([\d,]+(?:\.\d+)?)\b/,
+  /(?:৳|tk\.?|taka|টাকা)\s*([\d,০-৯]+(?:\.\d+)?)/i,
+  /([\d,০-৯]+(?:\.\d+)?)\s*(?:taka|tk\.?|bdt|টাকা)/i,
+  /\b([\d,০-৯]+(?:\.\d+)?)\b/,
 ];
 
 const PHONE_PATTERNS = [
@@ -21,22 +34,37 @@ const TIME_PATTERNS = [
 const MERCHANT_PATTERN = /\b(?:at|from|to)\s+([A-Za-z][A-Za-z0-9\s&'.-]{2,40})\b/i;
 
 const TYPE_KEYWORDS = {
-  transfer: /\b(transfer|sent|send|pathano|pathiyechi|money\s+sent)\b/i,
+  transfer: /\b(transfer|sent|send|pathano|pathiyechi|money\s+sent|পাঠি)/i,
   payment: /\b(payment|paid|pay|bill|charge|deduct)\b/i,
   refund: /\b(refund|money\s+back|return\s+money)\b/i,
   withdrawal: /\b(withdraw|withdrawal|cash\s+out)\b/i,
+  cash_in: /(?:cash\s*in|cash-in|cashin|ক্যাশ\s*ইন)/i,
+  settlement: /\b(settle|settlement)\b/i,
 };
 
 const INTENT_KEYWORDS = {
-  wrong_transfer: /\b(wrong\s+(?:number|account|person|transfer)|sent\s+to\s+wrong|mistake\s+transfer|bhul\s+(?:number|transfer))\b/i,
-  payment_failed: /\b(payment\s+failed|failed\s+payment|payment.*failed|did\s+not\s+go\s+through|transaction\s+failed|hoyni|failed)\b/i,
+  agent_cash_in_issue: /(?:cash\s*in|cash-in|cashin|ক্যাশ\s*ইন)/i,
+  wrong_transfer:
+    /\b(wrong\s+(?:number|account|person|transfer)|sent\s+to\s+wrong|mistake\s+transfer|bhul\s+(?:number|transfer)|sent\b[^.]{0,100}\bdidn'?t\s+(?:get|receive)\b|not\s+received)\b/i,
+  payment_failed:
+    /\b(payment\s+failed|failed\s+payment|payment.*failed|did\s+not\s+go\s+through|transaction\s+failed|hoyni|failed)\b/i,
   refund_request: /\b(refund|money\s+back|return\s+my\s+money|chargeback)\b/i,
-  phishing_or_social_engineering: /\b(phishing|scam|fraud|fake\s+call|otp\s+share|password\s+share|suspicious\s+link|hacked)\b/i,
+  phishing_or_social_engineering:
+    /\b(phishing|scam|fraud|fake\s+call|otp\s+share|password\s+share|suspicious\s+link|hacked|asked\s+for\s+(?:my\s+)?(?:otp|pin|password)|account\s+will\s+be\s+blocked|called\s+me\s+(?:saying|claiming))\b/i,
+  duplicate_payment:
+    /\b(twice|double|duplicate|two\s+times|twice\s+deducted|deducted\s+twice|charged\s+twice|paid\s+twice)\b/i,
+  merchant_settlement_delay:
+    /\b(settle|settlement|sales|not\s+settled|merchant\s+sales|settlement\s+delay)\b/i,
 };
 
+function normalizeBanglaDigits(text) {
+  return text.replace(/[০-৯]/g, (ch) => BANGLA_TO_ASCII[ch] ?? ch);
+}
+
 function parseAmount(text) {
+  const normalized = normalizeBanglaDigits(text);
   for (const pattern of AMOUNT_PATTERNS) {
-    const match = text.match(pattern);
+    const match = normalized.match(pattern);
     if (match) {
       const raw = match[1].replace(/,/g, "");
       const value = parseFloat(raw);

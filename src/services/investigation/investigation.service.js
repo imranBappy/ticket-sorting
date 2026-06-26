@@ -21,11 +21,15 @@ class InvestigationService {
     this.llmService = llmService || new LlmService();
   }
 
-  async investigate({ complaint, transaction_history: transactionHistory }) {
+  async investigate({ ticket_id, complaint, transaction_history: transactionHistory }) {
     const start = Date.now();
     const parsedComplaint = parseComplaint(complaint);
     const matchResult = matchTransaction(parsedComplaint, transactionHistory);
-    const evidenceResult = evaluateEvidence(parsedComplaint, matchResult);
+    const evidenceResult = evaluateEvidence(
+      parsedComplaint,
+      matchResult,
+      transactionHistory || [],
+    );
     const ruleResult = applyRules(parsedComplaint, evidenceResult, matchResult);
 
     const templateReplies = generateReplies(
@@ -36,6 +40,7 @@ class InvestigationService {
     );
 
     let response = {
+      ticket_id,
       relevant_transaction_id: matchResult.relevantTransactionId,
       evidence_verdict: evidenceResult.evidenceVerdict,
       case_type: ruleResult.caseType,

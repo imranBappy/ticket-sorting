@@ -4,8 +4,8 @@ function classifyCase(parsedComplaint, evidenceVerdict) {
   if (evidenceVerdict === "insufficient_data" && caseType === "other") {
     return {
       caseType: "other",
-      ambiguous: true,
-      reasonCodes: ["ambiguous_case"],
+      ambiguous: false,
+      reasonCodes: ["vague_complaint", "needs_clarification"],
     };
   }
 

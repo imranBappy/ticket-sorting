@@ -7,6 +7,7 @@ const {
 } = require("../config/enums");
 
 const analyzeResponseSchema = z.object({
+  ticket_id: z.string().min(1),
   relevant_transaction_id: z.string().nullable(),
   evidence_verdict: z.enum(EVIDENCE_VERDICTS),
   case_type: z.enum(CASE_TYPES),

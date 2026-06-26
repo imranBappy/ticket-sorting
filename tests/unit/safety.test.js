@@ -33,6 +33,30 @@ describe("output safety", () => {
     expect(text).not.toMatch(/I have refunded/i);
   });
 
+  test("scrubs multiple occurrences and other sensitive terms", () => {
+    const { text, flagged } = scrubUnsafeOutput("Your OTP is secret, do not share this OTP or PIN or CVV");
+    expect(flagged).toBe(true);
+    expect(text).toBe("Your [redacted] is [redacted], do not share this [redacted] or [redacted] or [redacted]");
+  });
+
+  test("scrubs different promise types (reversal, unblock, recovery, refund)", () => {
+    const refundTest = scrubUnsafeOutput("Your refund is processed");
+    expect(refundTest.flagged).toBe(true);
+    expect(refundTest.text).toContain("We are reviewing your refund request");
+
+    const reversalTest = scrubUnsafeOutput("We will reverse the transaction");
+    expect(reversalTest.flagged).toBe(true);
+    expect(reversalTest.text).toContain("We are reviewing the transaction status");
+
+    const unblockTest = scrubUnsafeOutput("Your account is unblocked");
+    expect(unblockTest.flagged).toBe(true);
+    expect(unblockTest.text).toContain("We are reviewing your account status");
+
+    const recoveryTest = scrubUnsafeOutput("We recovered the funds");
+    expect(recoveryTest.flagged).toBe(true);
+    expect(recoveryTest.text).toContain("We are investigating the transaction activity");
+  });
+
   test("scrubs response fields and flags human review", () => {
     const result = scrubResponseFields({
       agent_summary: "Please share your OTP",

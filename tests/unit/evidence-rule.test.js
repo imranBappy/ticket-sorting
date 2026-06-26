@@ -72,8 +72,10 @@ describe("severity-engine", () => {
 });
 
 describe("classifier", () => {
-  test("marks other intent as ambiguous", () => {
+  test("marks vague other intent as needing clarification without ambiguity flag", () => {
     const result = classifyCase({ intent: "other", parserConfidence: 0.4 }, "insufficient_data");
-    expect(result.ambiguous).toBe(true);
+    expect(result.caseType).toBe("other");
+    expect(result.ambiguous).toBe(false);
+    expect(result.reasonCodes).toContain("vague_complaint");
   });
 });
