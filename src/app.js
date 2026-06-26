@@ -5,6 +5,7 @@ const requestIdMiddleware = require("./middleware/request-id");
 const { createHttpLogger } = require("./middleware/logger");
 const errorHandler = require("./middleware/error-handler");
 const healthRoutes = require("./routes/health.routes");
+const analyzeRoutes = require("./routes/analyze.routes");
 
 function createApp() {
   const app = express();
@@ -15,6 +16,7 @@ function createApp() {
   app.use(express.json({ limit: config.limits.maxJsonBodySize }));
 
   app.use(healthRoutes);
+  app.use(analyzeRoutes);
 
   app.use(errorHandler);
 
